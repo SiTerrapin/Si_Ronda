@@ -1,1 +1,58 @@
 *.sqlite*
+# ========================================
+# Laravel & PHP
+# ========================================
+/vendor/
+composer.lock
+
+# ========================================
+# Environment Files (Rahasia)
+# ========================================
+.env
+.env.*.php
+.env.php
+
+# ========================================
+# Laravel Storage & Cache
+# ========================================
+/storage/*.key
+/storage/app/public
+/storage/framework/*
+/storage/logs/*
+/bootstrap/cache/*
+
+# ========================================
+# Node.js & Frontend
+# ========================================
+/node_modules/
+/public/hot
+/public/storage
+/public/mix-manifest.json
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# ========================================
+# IDE / Editor Files
+# ========================================
+/.idea/
+/.vscode/
+/*.sublime-project
+/*.sublime-workspace
+
+# ========================================
+# OS Generated Files
+# ========================================
+.DS_Store
+Thumbs.db
+
+# ========================================
+# PHPUnit & Testing
+# ========================================
+.phpunit.result.cache
+
+# ========================================
+# Backup & Temporary
+# ========================================
+*.bak
+*.tmp
