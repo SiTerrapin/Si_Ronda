@@ -1,3 +1,66 @@
+# 🛡️ SiRonda
+
+![SiRonda Logo](./public/assets/icon/LogoNav_sironda.png)
+
+**SiRonda** adalah **Aplikasi Penjadwalan dan Monitoring Ronda Malam** yang dirancang untuk membantu warga mengatur jadwal ronda, memantau kehadiran, dan mencatat laporan kejadian dengan mudah dan terstruktur.
+
+---
+
+## 📖 Deskripsi
+SiRonda mempermudah pengelolaan jadwal ronda malam di lingkungan masyarakat.  
+Aplikasi ini membantu:
+- Menyusun jadwal ronda otomatis agar semua warga mendapat giliran yang adil.
+- Mencatat kehadiran dan riwayat ronda setiap warga.
+- Membuat laporan kejadian malam secara digital.
+
+---
+
+## 📷 Gambar Kegiatan
+> Sekelompok bapak-bapak berkumpul di pos ronda, bergiliran berjaga sambil absen menggunakan laptop.
+
+![Kegiatan Ronda](./public/assets/images/kegiatan_ronda.png)
+
+---
+
+## 🚀 Fitur Utama
+- **Penjadwalan Ronda Otomatis** → Sistem mengatur giliran warga secara merata.
+- **Riwayat Ronda per Warga** → Catatan lengkap siapa dan kapan ronda dilakukan.
+- **Laporan Kejadian Malam** → Dokumentasi peristiwa yang terjadi saat ronda.
+
+---
+
+## 🛠️ Teknologi yang Digunakan
+- **Frontend:** HTML, CSS, JavaScript
+- **Backend:** Laravel (PHP)
+- **Database:** MySQL
+- **Framework UI:** Bootstrap
+
+---
+
+## 📌 Cara Menjalankan Proyek
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/username/sironda.git
+   cd sironda
+
+---
+
+## 💚 Thanks to all contributors! 💚
+
+   | Nama           | Peran                  |
+   |----------------|------------------------|
+   | [**Bavastravan**](https://github.com/Bavastravan) | Project Manager        |
+   | [**Bapong**](https://github.com/Bapong)      | Frontend Developer     |
+   | [**SiTerrapin**](https://github.com/SiTerrapin)   | Backend Developer      |
+   | [**daffadzaki20**](https://github.com/daffadzaki20)    | UI/UX Designer         |
+   | [**Grezze**](https://github.com/Grezze)      | Database Administrator |
+   | [**cemong01**](https://github.com/cemong01)        | QA Tester              |
+
+---
+<div align="center">
+   <h1>✨ Thanks to Laravel! ✨</h1>
+</div>
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
