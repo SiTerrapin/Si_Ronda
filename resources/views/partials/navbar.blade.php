@@ -18,7 +18,7 @@
 
                 @auth
                 <li class="nav-item">
-                    <span class="nav-link"><a href="#">👮 {{ Auth::user()->nama }}</a></span>
+                    <span class="nav-link"><a href="#">👮 {{ Auth::user()->nama_lengkap }}</a></span>
                 </li>
                 <li class="nav-item">
                     <form method="POST" action="{{ route('logout') }}">

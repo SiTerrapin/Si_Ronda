@@ -24,5 +24,6 @@ class Laporan extends Model
         return $this->belongsTo(Petugas::class, 'petugas_id', 'id_petugas');
     }
 
+    const UPDATED_AT = null;
     public $timestamps = true;
 }

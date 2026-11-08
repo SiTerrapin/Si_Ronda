@@ -11,6 +11,7 @@ class Plot extends Model
 
     protected $table = 'plot_ronda';
     protected $primaryKey = 'id_plot';
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'petugas_id',

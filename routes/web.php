@@ -22,10 +22,11 @@ Route::middleware('guest:petugas')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-//Tempat Route Menu
-Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+// Route Registrasi Petugas
+Route::middleware('guest:petugas')->group(function () {
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register']);
+});
 
 Route::middleware('auth:petugas')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
