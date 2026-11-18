@@ -2,97 +2,143 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
+use App\Models\Laporan;
 use App\Models\Petugas;
 use App\Models\Plot;
-use App\Models\Laporan;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
 
 class InternalMenuEquivalencePartitioningTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Petugas $petugasAktif;
+    private Petugas $adminUser;
+    private Petugas $petugasBiasa;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Buat petugas aktif default untuk sesi login menu dalam
-        $this->petugasAktif = Petugas::create([
+        $this->adminUser = Petugas::create([
+            'username'     => 'admin_test',
+            'password'     => Hash::make('admin123'),
+            'nama_lengkap' => 'Admin Ronda',
+            'no_hp'        => '081234567890',
+            'alamat'       => 'RT 01 / Pos Utama',
+            'gender'       => 'M',
+            'role'         => 'admin',
+            'is_active'    => '1',
+        ]);
+
+        $this->petugasBiasa = Petugas::create([
             'username'     => 'petugas_utama',
             'password'     => Hash::make('password123'),
             'nama_lengkap' => 'Budi Santoso',
+            'no_hp'        => '081298765432',
+            'alamat'       => 'RT 02 / Blok B',
             'gender'       => 'M',
+            'role'         => 'petugas',
             'is_active'    => '1',
         ]);
     }
 
-    /* =========================================================================
-     * 1. MENU JADWAL RONDA (/plot) - Penjadwalan Otomatis
-     * ========================================================================= */
-
-    /**
-     * JDW-001 & JDW-002: Partisi Valid (Petugas Aktif >= 21)
-     */
-    public function test_penjadwalan_partisi_valid_petugas_cukup(): void
+    public function test_halaman_publik_dapat_diakses_tanpa_login(): void
     {
-        // Total petugas aktif: 1 (setUp) + 20 (factory) = 21 petugas
-        Petugas::factory()->count(20)->create(['is_active' => '1']);
-
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
-            ->post('/plot/schedule');
-
-        $response->assertRedirect(route('plot.index'));
-        $response->assertSessionHas('success', 'Penjadwalan otomatis berhasil.');
-        $this->assertEquals(21, Plot::count());
-        $this->assertEquals(7, Plot::where('is_leader', '1')->count());
+        $this->get('/')->assertStatus(200);
+        $this->get('/jadwal')->assertStatus(200);
+        $this->get('/anggota')->assertStatus(200);
+        $this->get('/kegiatan')->assertStatus(200);
     }
 
-    /**
-     * JDW-003 & JDW-004: Partisi Invalid (Petugas Aktif < 21)
-     */
-    public function test_penjadwalan_partisi_invalid_petugas_kurang(): void
+    public function test_rbac_petugas_biasa_ditolak_akses_menu_admin(): void
     {
-        // Hanya 1 petugas (setUp) + 10 = 11 petugas (< 21)
-        Petugas::factory()->count(10)->create(['is_active' => '1']);
-
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
-            ->post('/plot/schedule');
-
-        $response->assertSessionHas('error', 'Jumlah petugas aktif tidak cukup untuk penjadwalan.');
-        $this->assertEquals(0, Plot::count());
+        $this->actingAs($this->petugasBiasa, 'petugas')->get('/petugas/create')->assertStatus(403);
+        $this->actingAs($this->petugasBiasa, 'petugas')->get('/plot/create')->assertStatus(403);
+        $this->actingAs($this->petugasBiasa, 'petugas')->post('/plot/schedule')->assertStatus(403);
+        $this->actingAs($this->petugasBiasa, 'petugas')->get('/rekap')->assertStatus(403);
     }
 
-    /* =========================================================================
-     * 2. MENU LAPORAN RONDA (/laporan) - Form Kirim Laporan
-     * ========================================================================= */
-
-    /**
-     * LAP-001 & LAP-002: Partisi Valid (Teks Laporan Terisi)
-     */
-    public function test_kirim_laporan_partisi_valid(): void
+    public function test_admin_dapat_kelola_petugas_dan_plot_anti_bentrok(): void
     {
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
-            ->post('/laporan', [
-                'isi_laporan' => 'Pukul 02:00 situasi pos ronda aman terkendali.',
+        // Tambah plot pertama
+        $res1 = $this->actingAs($this->adminUser, 'petugas')->post('/plot', [
+            'petugas_id' => $this->petugasBiasa->id_petugas,
+            'nama_hari'  => 'Senin',
+            'pos_jaga'   => 'Pos Utama',
+            'shift'      => 'Malam (22:00 - 04:00)',
+            'is_leader'  => '1',
+        ]);
+        $res1->assertRedirect(route('plot.index'));
+
+        // Tambah plot kedua untuk petugas sama di hari & shift yang sama -> ditolak (anti-bentrok)
+        $res2 = $this->actingAs($this->adminUser, 'petugas')->post('/plot', [
+            'petugas_id' => $this->petugasBiasa->id_petugas,
+            'nama_hari'  => 'Senin',
+            'pos_jaga'   => 'Pos Utara',
+            'shift'      => 'Malam (22:00 - 04:00)',
+            'is_leader'  => '0',
+        ]);
+        $res2->assertSessionHasErrors('petugas_id');
+        $this->assertEquals(1, Plot::count());
+    }
+
+    public function test_petugas_dapat_mengisi_presensi_pada_jadwalnya_sendiri(): void
+    {
+        // Selasa 10 Nov 2026 pukul 23:00 WIB (masuk dalam shift Malam 22:00 - 04:00)
+        Carbon::setTestNow(Carbon::create(2026, 11, 10, 23, 0, 0, 'Asia/Jakarta'));
+
+        $plot = Plot::create([
+            'petugas_id'       => $this->petugasBiasa->id_petugas,
+            'nama_hari'        => 'Selasa',
+            'pos_jaga'         => 'Pos Utama',
+            'shift'            => 'Malam (22:00 - 04:00)',
+            'is_leader'        => '0',
+            'is_active'        => '1',
+            'status_kehadiran' => 'Terjadwal',
+        ]);
+
+        $response = $this->actingAs($this->petugasBiasa, 'petugas')
+            ->patch("/plot/{$plot->id_plot}/presensi", [
+                'status_kehadiran' => 'Hadir',
             ]);
 
-        $response->assertSessionHas('success', 'Laporan berhasil disimpan.');
-        $this->assertDatabaseHas('laporan_petugas', [
-            'petugas_id'  => $this->petugasAktif->id_petugas,
-            'isi_laporan' => 'Pukul 02:00 situasi pos ronda aman terkendali.',
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('plot_ronda', [
+            'id_plot'          => $plot->id_plot,
+            'status_kehadiran' => 'Hadir',
         ]);
     }
 
-    /**
-     * LAP-003: Partisi Invalid (Isi Laporan Kosong)
-     */
+    public function test_kirim_laporan_dan_verifikasi_admin(): void
+    {
+        $resStore = $this->actingAs($this->petugasBiasa, 'petugas')
+            ->post('/laporan', [
+                'kategori_situasi' => 'Aman',
+                'isi_laporan'      => 'Pukul 02:00 situasi pos ronda aman terkendali.',
+            ]);
+
+        $resStore->assertSessionHas('success', 'Laporan berhasil disimpan.');
+        $laporan = Laporan::first();
+        $this->assertEquals('Pending', $laporan->status_verifikasi);
+
+        // Admin memverifikasi
+        $resVerify = $this->actingAs($this->adminUser, 'petugas')
+            ->patch("/laporan/{$laporan->id_lapor}/verify", [
+                'status_verifikasi' => 'Diverifikasi',
+            ]);
+
+        $resVerify->assertSessionHas('success');
+        $this->assertDatabaseHas('laporan_petugas', [
+            'id_lapor'          => $laporan->id_lapor,
+            'status_verifikasi' => 'Diverifikasi',
+        ]);
+    }
+
     public function test_kirim_laporan_partisi_invalid_kosong(): void
     {
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
+        $response = $this->actingAs($this->petugasBiasa, 'petugas')
             ->post('/laporan', [
                 'isi_laporan' => '',
             ]);
@@ -101,131 +147,75 @@ class InternalMenuEquivalencePartitioningTest extends TestCase
         $this->assertEquals(0, Laporan::count());
     }
 
-    /* =========================================================================
-     * 3. MENU LAPORAN RONDA (/laporan/{id}) - Detail Laporan
-     * ========================================================================= */
-
-    /**
-     * DET-001: Partisi Valid (ID Terdaftar)
-     */
-    public function test_detail_laporan_partisi_valid_id_terdaftar(): void
+    public function test_detail_laporan_partisi_valid_dan_404(): void
     {
         $laporan = Laporan::create([
-            'petugas_id'    => $this->petugasAktif->id_petugas,
-            'tanggal_lapor' => now(),
-            'isi_laporan'   => 'Laporan ronda malam hari ini.',
+            'petugas_id'        => $this->petugasBiasa->id_petugas,
+            'tanggal_lapor'     => now(),
+            'kategori_situasi'  => 'Aman',
+            'isi_laporan'       => 'Laporan ronda malam hari ini.',
+            'status_verifikasi' => 'Pending',
         ]);
 
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
-            ->get('/laporan/' . $laporan->id_lapor);
+        $this->actingAs($this->petugasBiasa, 'petugas')
+            ->get('/laporan/' . $laporan->id_lapor)
+            ->assertStatus(200)
+            ->assertSee('Laporan ronda malam hari ini.');
 
-        $response->assertStatus(200);
-        $response->assertSee('Laporan ronda malam hari ini.');
+        $this->actingAs($this->petugasBiasa, 'petugas')
+            ->get('/laporan/99999')
+            ->assertStatus(404);
     }
 
-    /**
-     * DET-002: Partisi Invalid (ID Tidak Ditemukan -> 404)
-     */
-    public function test_detail_laporan_partisi_invalid_id_tidak_ada(): void
+    public function test_dashboard_sapaan_pagi_siang_sore_malam(): void
     {
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
-            ->get('/laporan/99999');
+        Carbon::setTestNow(Carbon::create(2026, 11, 8, 8, 0, 0, 'Asia/Jakarta'));
+        $this->actingAs($this->petugasBiasa, 'petugas')->get('/dashboard')->assertSee('Selamat pagi, Budi Santoso!');
 
-        $response->assertStatus(404);
+        Carbon::setTestNow(Carbon::create(2026, 11, 8, 13, 0, 0, 'Asia/Jakarta'));
+        $this->actingAs($this->petugasBiasa, 'petugas')->get('/dashboard')->assertSee('Selamat siang, Budi Santoso!');
+
+        Carbon::setTestNow(Carbon::create(2026, 11, 8, 16, 0, 0, 'Asia/Jakarta'));
+        $this->actingAs($this->petugasBiasa, 'petugas')->get('/dashboard')->assertSee('Selamat sore, Budi Santoso!');
+
+        Carbon::setTestNow(Carbon::create(2026, 11, 8, 21, 0, 0, 'Asia/Jakarta'));
+        $this->actingAs($this->petugasBiasa, 'petugas')->get('/dashboard')->assertSee('Selamat malam, Budi Santoso!');
     }
 
-    /* =========================================================================
-     * 4. MENU DASHBOARD (/dashboard) - Logika Sapaan Waktu 24 Jam
-     * ========================================================================= */
-
-    /**
-     * SAP-001: Partisi Pagi (08:00)
-     */
-    public function test_dashboard_sapaan_pagi(): void
-    {
-        Carbon::setTestNow(Carbon::create(2026, 11, 8, 8, 0, 0));
-
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
-            ->get('/dashboard');
-
-        $response->assertStatus(200);
-        $response->assertSee('Selamat pagi, Budi Santoso!');
-    }
-
-    /**
-     * SAP-004: Partisi Siang (13:00)
-     */
-    public function test_dashboard_sapaan_siang(): void
-    {
-        Carbon::setTestNow(Carbon::create(2026, 11, 8, 13, 0, 0));
-
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
-            ->get('/dashboard');
-
-        $response->assertStatus(200);
-        $response->assertSee('Selamat siang, Budi Santoso!');
-    }
-
-    /**
-     * SAP-005: Partisi Sore (16:00)
-     */
-    public function test_dashboard_sapaan_sore(): void
-    {
-        Carbon::setTestNow(Carbon::create(2026, 11, 8, 16, 0, 0));
-
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
-            ->get('/dashboard');
-
-        $response->assertStatus(200);
-        $response->assertSee('Selamat sore, Budi Santoso!');
-    }
-
-    /**
-     * SAP-008: Partisi Malam (21:00)
-     */
-    public function test_dashboard_sapaan_malam(): void
-    {
-        Carbon::setTestNow(Carbon::create(2026, 11, 8, 21, 0, 0));
-
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
-            ->get('/dashboard');
-
-        $response->assertStatus(200);
-        $response->assertSee('Selamat malam, Budi Santoso!');
-    }
-
-    /* =========================================================================
-     * 5. MENU PETUGAS (/petugas) - Filter Keaktifan Petugas
-     * ========================================================================= */
-
-    /**
-     * PTG-001 & PTG-002: Hanya Menampilkan Petugas Aktif
-     */
-    public function test_menu_petugas_hanya_tampilkan_petugas_aktif(): void
+    public function test_menu_petugas_hanya_tampilkan_petugas_aktif_untuk_petugas_biasa(): void
     {
         Petugas::create([
             'username'     => 'petugas_nonaktif_1',
             'password'     => Hash::make('password123'),
             'nama_lengkap' => 'Warga Yang Sudah Nonaktif',
             'gender'       => 'M',
-            'is_active'    => '0', // Nonaktif
+            'role'         => 'petugas',
+            'is_active'    => '0',
         ]);
 
-        $response = $this->actingAs($this->petugasAktif, 'petugas')
-            ->get('/petugas');
-
+        $response = $this->actingAs($this->petugasBiasa, 'petugas')->get('/petugas');
         $response->assertStatus(200);
-        $response->assertSee('Budi Santoso'); // Aktif
-        $response->assertDontSee('Warga Yang Sudah Nonaktif'); // Terfilter
+        $response->assertSee('Budi Santoso');
+        $response->assertDontSee('Warga Yang Sudah Nonaktif');
     }
 
-    /* =========================================================================
-     * 6. PROTEKSI AKSES MENU INTERNAL (Middleware auth:petugas)
-     * ========================================================================= */
+    public function test_admin_dapat_generate_rekap_harian(): void
+    {
+        $response = $this->actingAs($this->adminUser, 'petugas')
+            ->post('/rekap/generate', [
+                'tanggal_rekap'   => '2026-11-18',
+                'status_keamanan' => 'Aman',
+                'isi_rekap'       => 'Malam kondusif tanpa kendala.',
+            ]);
 
-    /**
-     * SEC-002 s/d SEC-005: Guest Ditolak Masuk ke Menu Dalam
-     */
+        $response->assertRedirect(route('rekap.index'));
+        $this->assertTrue(
+            \App\Models\Rekap::whereDate('tanggal_rekap', '2026-11-18')
+                ->where('status_keamanan', 'Aman')
+                ->exists()
+        );
+    }
+
     public function test_guest_tidak_bisa_akses_menu_dalam(): void
     {
         $this->get('/dashboard')->assertRedirect('/login');
@@ -235,4 +225,3 @@ class InternalMenuEquivalencePartitioningTest extends TestCase
         $this->get('/petugas')->assertRedirect('/login');
     }
 }
-

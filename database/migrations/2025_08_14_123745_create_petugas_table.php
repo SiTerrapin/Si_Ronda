@@ -12,15 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('petugas', function (Blueprint $table) {
-            $table->increments('id_petugas'); // Menggunakan increments untuk INT AUTO_INCREMENT PRIMARY KEY
-            $table->string('username', 20)->unique(); // username harus unik
+            $table->increments('id_petugas');
+            $table->string('username', 20)->unique();
             $table->string('password', 100);
-            $table->enum('is_active', ['0', '1'])->default('1');
             $table->string('nama_lengkap', 50);
-            $table->enum('gender', ['M', 'F']);
-            // Tidak perlu timestamps() karena di SQL asli tidak ada created_at/updated_at default
-            // Tapi jika Anda ingin menggunakan fitur timestamps Laravel, Anda bisa menambahkannya:
-            // $table->timestamps(); // Ini akan otomatis membuat created_at dan updated_at
+            $table->string('no_hp', 20)->nullable();
+            $table->string('alamat', 100)->nullable();
+            $table->enum('gender', ['M', 'F'])->default('M');
+            $table->enum('role', ['super_admin', 'admin', 'petugas'])->default('petugas')->index();
+            $table->enum('is_active', ['0', '1'])->default('1')->index();
+            $table->timestamps();
         });
     }
 

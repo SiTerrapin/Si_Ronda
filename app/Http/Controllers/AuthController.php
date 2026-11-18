@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Petugas;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function showlogin() {
+    public function showLogin()
+    {
         return view('auth.login');
     }
 
-    public function login(Request $request) {
+    public function login(Request $request)
+    {
         $credentials = $request->validate([
             'username' => ['required'],
             'password' => ['required'],
@@ -26,43 +27,50 @@ class AuthController extends Controller
             if ($petugas->is_active === '1') {
                 Auth::guard('petugas')->login($petugas);
                 $request->session()->regenerate();
-                return redirect()->intended('/dashboard');
-            } else {
-                return back()->withErrors(['username' => 'Akun nonaktif']);
+                return redirect()->intended(route('dashboard'));
             }
+
+            return back()->withErrors(['username' => 'Akun nonaktif'])->onlyInput('username');
         }
 
-        return back()->withErrors(['username' => 'Username atau password salah']);
+        return back()->withErrors(['username' => 'Username atau password salah'])->onlyInput('username');
     }
 
-    public function showRegister() {
+    public function showRegister()
+    {
         return view('auth.register');
     }
 
-    public function register(Request $request) {
+    public function register(Request $request)
+    {
         $validated = $request->validate([
-            'username' => ['required', 'unique:petugas'],
-            'password' => ['required', 'min:6', 'confirmed'],
-            'nama_lengkap' => ['required'],
-            'gender' => ['required', 'in:M,F'],
+            'username'     => ['required', 'string', 'max:20', 'unique:petugas,username'],
+            'password'     => ['required', 'string', 'min:6', 'confirmed'],
+            'nama_lengkap' => ['required', 'string', 'max:50'],
+            'no_hp'        => ['nullable', 'string', 'max:20'],
+            'alamat'       => ['nullable', 'string', 'max:100'],
+            'gender'       => ['required', 'in:M,F'],
         ]);
 
-        $petugas = Petugas::create([
-            'username' => $validated['username'],
-            'password' => Hash::make($validated['password']),
+        Petugas::create([
+            'username'     => $validated['username'],
+            'password'     => Hash::make($validated['password']),
             'nama_lengkap' => $validated['nama_lengkap'],
-            'gender' => $validated['gender'],
-            'is_active' => '1',
+            'no_hp'        => $validated['no_hp'] ?? null,
+            'alamat'       => $validated['alamat'] ?? null,
+            'gender'       => $validated['gender'],
+            'role'         => 'petugas',
+            'is_active'    => '0',
         ]);
 
-        return redirect()->route('login')->with('success', 'Akun berhasil dibuat. Silakan login.');
+        return redirect()->route('login')->with('success', 'Akun berhasil dibuat. Menunggu aktivasi Admin sebelum dapat login.');
     }
 
-    public function logout(Request $request) {
+    public function logout(Request $request)
+    {
         Auth::guard('petugas')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/login');
+        return redirect()->route('login');
     }
-
 }

@@ -1,167 +1,144 @@
 # DOKUMENTASI PENGUJIAN PERANGKAT LUNAK: EQUIVALENCE PARTITIONING (EP)
 ## Sistem Informasi Ronda Terpadu (SiRonda)
-*Khusus Menu & Fitur di Dalam Aplikasi (Setelah Login)*
+*Tersinkronisasi dengan `tests/Feature/EquivalencePartitioningTest.php` dan `tests/Feature/InternalMenuEquivalencePartitioningTest.php`*
 
 ---
 
-### 1. FITUR: PENJADWALAN RONDA OTOMATIS (Menu Jadwal)
+### 1. FITUR: REGISTRASI & MODERASI AKUN (`/register`)
 
 **RULE:**
 - **Valid:**  
-  Data Input $\ge$ 21 Petugas Aktif, Sistem akan menerima data dan mengenerate seluruh jadwal ronda 7 hari (3 petugas/hari, 1 orang leader).
-- **Invalid (Kondisi Minimum):**  
-  Data Input $<$ 21 Petugas Aktif, Sistem akan menolak dan memunculkan pesan error *"Jumlah petugas aktif tidak cukup untuk penjadwalan."*
-- **Invalid (Kondisi Petugas Nonaktif):**  
-  Petugas dengan status nonaktif (`is_active = '0'`) tidak dihitung ke kuota minimal 21.
+  Username unik (1–20 karakter), password $\ge$ 6 karakter dan cocok dengan konfirmasi, nama lengkap terisi, serta gender `'M'` atau `'F'`. Sistem membuat akun dengan `role = 'petugas'` dan `is_active = '0'` (menunggu aktivasi Admin sebelum dapat login).
+- **Invalid (Username Duplikat):**  
+  Username sudah terdaftar di tabel `petugas`, sistem menolak dengan error validasi `username`.
+- **Invalid (Password < 6 Karakter / Mismatch):**  
+  Password kurang dari 6 karakter atau tidak sama dengan konfirmasi, sistem menolak dengan error validasi `password`.
+- **Invalid (Gender di luar M/F):**  
+  Gender selain `'M'` dan `'F'`, sistem menolak dengan error validasi `gender`.
 
 | ID KASUS | SKENARIO | DATA INPUT | HASIL AKTUAL | STATUS |
 | :---: | :--- | :---: | :--- | :---: |
-| **001** | Input jumlah petugas aktif sesuai kriteria minimal | 21 Petugas Aktif | Sistem menerima data dan berhasil membuat 21 baris jadwal ronda | **Valid** |
-| **002** | Input jumlah petugas aktif melebihi kriteria minimal | 25 Petugas Aktif | Sistem menerima data, mengacak petugas, dan berhasil membuat jadwal | **Valid** |
-| **003** | Input jumlah petugas aktif di bawah kriteria minimal | 15 Petugas Aktif | Sistem menolak proses dan memunculkan pesan error kuota tidak cukup | **Tidak Valid** |
-| **004** | Input jumlah petugas aktif tepat 1 angka di bawah minimal | 20 Petugas Aktif | Sistem menolak proses dan memunculkan pesan error kuota tidak cukup | **Tidak Valid** |
-| **005** | Total petugas 25 orang, tetapi yang aktif di bawah kriteria minimal | 18 Petugas Aktif,<br>7 Petugas Nonaktif | Sistem menolak proses dan memunculkan pesan error kuota tidak cukup | **Tidak Valid** |
+| **REG-01** | Registrasi lengkap dengan data valid & unik | `username: "budi_santoso"`, `pass: "rahasia123"`, `gender: "M"` | Redirect ke `/login`, akun tersimpan dengan `role = 'petugas'` dan `is_active = '0'` | **Valid** |
+| **REG-02** | Registrasi dengan username yang sudah terdaftar | `username: "budi_santoso"` (duplikat) | Sistem menolak dan mengembalikan error validasi `username` | **Tidak Valid** |
+| **REG-03** | Registrasi dengan password di bawah 6 karakter | `password: "12345"` (5 karakter) | Sistem menolak dan mengembalikan error validasi `password` | **Tidak Valid** |
+| **REG-04** | Registrasi dengan konfirmasi password berbeda | `pass: "rahasia123"`, `konf: "berbeda123"` | Sistem menolak dan mengembalikan error validasi `password` | **Tidak Valid** |
+| **REG-05** | Registrasi dengan nilai gender tidak sah | `gender: "X"` | Sistem menolak dan mengembalikan error validasi `gender` | **Tidak Valid** |
 
 ---
 
-### 2. FITUR: INPUT LAPORAN KEGIATAN RONDA (Menu Laporan)
+### 2. FITUR: LOGIN PETUGAS & ADMIN (`/login`)
 
 **RULE:**
 - **Valid:**  
-  Data Input Isi Laporan $\ge$ 1 Karakter teks peristiwa/kejadian, Sistem akan menerima dan menyimpan laporan ke database.
-- **Invalid (Kondisi Minimum):**  
-  Data Input Isi Laporan kosong (0 Karakter), Sistem akan menolak dan memunculkan pesan error *"The isi laporan field is required."*
-- **Invalid (Kondisi Hanya Spasi):**  
-  Data Input Isi Laporan hanya berupa spasi kosong (*whitespace*), Sistem akan menolak dan memunculkan pesan error.
+  Username terdaftar, password cocok, dan `is_active = '1'`. Sistem mengautentikasi pada guard `petugas` dan mengarahkan ke `/dashboard`.
+- **Invalid (Akun Nonaktif / Belum Diaktifkan Admin):**  
+  Kredensial benar tetapi `is_active = '0'`, sistem menolak login dengan pesan *"Akun nonaktif"*.
+- **Invalid (Password / Username Salah):**  
+  Username tidak ditemukan atau password salah, sistem menolak login dengan pesan *"Username atau password salah"*.
 
 | ID KASUS | SKENARIO | DATA INPUT | HASIL AKTUAL | STATUS |
 | :---: | :--- | :---: | :--- | :---: |
-| **006** | Input laporan dengan teks peristiwa yang lengkap | `"Pukul 02:00 situasi pos ronda aman terkendali, pintu portal gang sudah dikunci."` | Sistem menerima data, menyimpan laporan, dan memunculkan pesan sukses | **Valid** |
-| **007** | Input laporan dengan teks pendek sesuai batas minimal | `"Aman"` (4 Karakter) | Sistem menerima data dan menyimpan laporan | **Valid** |
-| **008** | Input laporan di bawah kriteria minimal (kosong) | `""` (0 Karakter) | Sistem menolak data dan memunculkan pesan error field required | **Tidak Valid** |
-| **009** | Input laporan hanya berisi spasi kosong | `"     "` (Hanya spasi) | Sistem menolak data dan memunculkan pesan error field required | **Tidak Valid** |
+| **LOG-01** | Login dengan kredensial valid & akun aktif | `user: "ronda_user"`, `pass: "password123"`, `is_active: '1'` | Terautentikasi di guard `petugas`, redirect ke `/dashboard` | **Valid** |
+| **LOG-02** | Login dengan akun yang berstatus nonaktif | `user: "user_nonaktif"`, `is_active: '0'` | Ditolak, tetap guest, muncul error *"Akun nonaktif"* | **Tidak Valid** |
+| **LOG-03** | Login dengan password salah | `user: "ronda_user"`, `pass: "passwordSalah"` | Ditolak, tetap guest, muncul error *"Username atau password salah"* | **Tidak Valid** |
 
 ---
 
-### 3. FITUR: DETAIL LAPORAN BERDASARKAN ID (Menu Laporan)
+### 3. FITUR: PENJADWALAN RONDA OTOMATIS PROPORSIONAL (`POST /plot/schedule` — Admin Only)
+
+**RULE:**
+- **Valid ($\ge 1$ Petugas Aktif):**  
+  Jumlah Petugas Aktif $\ge 1$, sistem mengacak dan merotasi petugas secara proporsional untuk 7 hari (maksimal 3 pos per hari: `Pos Utama`, `Pos Utara`, `Pos Selatan`, dengan 1 komandan/leader setiap hari).
+- **Invalid (0 Petugas Aktif):**  
+  Jumlah Petugas Aktif $= 0$, sistem menolak penjadwalan dan memunculkan pesan error *"Belum ada petugas aktif untuk penjadwalan."*
+
+| ID KASUS | SKENARIO | DATA INPUT | HASIL AKTUAL | STATUS |
+| :---: | :--- | :---: | :--- | :---: |
+| **SCH-01** | Penjadwalan otomatis dengan petugas aktif $\ge 21$ | 21 Petugas Aktif | Berhasil membuat 21 plot jadwal (7 hari $\times$ 3 pos, 7 leader) | **Valid** |
+| **SCH-02** | Penjadwalan otomatis proporsional saat petugas aktif $< 21$ ($\ge 1$) | 11 Petugas Aktif | Berhasil merotasi secara proporsional menjadi 21 plot jadwal (7 leader) | **Valid** |
+| **SCH-03** | Penjadwalan saat tidak ada petugas aktif sama sekali | 0 Petugas Aktif | Sistem menolak dan memunculkan pesan error kuota kosong | **Tidak Valid** |
+
+---
+
+### 4. FITUR: PLOTTING JADWAL MANUAL & VALIDASI ANTI-BENTROK (`POST /plot` — Admin Only)
 
 **RULE:**
 - **Valid:**  
-  Data Input Parameter ID berupa angka bulat positif yang datanya terdaftar di database, Sistem akan menampilkan halaman detail laporan.
-- **Invalid (ID Tidak Ditemukan):**  
-  Data Input Parameter ID berupa angka yang tidak terdaftar di database, Sistem akan menolak dan memunculkan halaman error 404 Not Found.
-- **Invalid (Format ID Bukan Angka):**  
-  Data Input Parameter ID bernilai $\le$ 0 atau berupa teks non-numerik, Sistem akan menolak dan memunculkan halaman error 404 Not Found.
+  Petugas aktif belum dijadwalkan pada kombinasi `nama_hari` dan `shift` yang sama. Sistem menyimpan slot jadwal baru.
+- **Invalid (Bentrok Jadwal):**  
+  Petugas yang sama di-plot ulang pada `nama_hari` dan `shift` yang sama. Sistem menolak dengan error validasi `petugas_id`.
 
 | ID KASUS | SKENARIO | DATA INPUT | HASIL AKTUAL | STATUS |
 | :---: | :--- | :---: | :--- | :---: |
-| **010** | Input ID laporan yang terdaftar di database | `id = 1` (Ada di database) | Sistem menerima permintaan dan menampilkan rincian laporan | **Valid** |
-| **011** | Input ID laporan yang tidak ada di database | `id = 99999` (Tidak ada di DB) | Sistem menolak permintaan dan memunculkan error 404 Not Found | **Tidak Valid** |
-| **012** | Input ID laporan di bawah batas minimal angka | `id = 0` atau `id = -1` | Sistem menolak permintaan dan memunculkan error 404 Not Found | **Tidak Valid** |
-| **013** | Input ID laporan berupa teks karakter | `id = "laporan-malam"` | Sistem menolak permintaan dan memunculkan error 404 Not Found | **Tidak Valid** |
+| **PLT-01** | Plot petugas pada hari & shift yang belum terisi | `Budi` — `Senin`, `Malam (22:00 - 04:00)` | Jadwal tersimpan dan redirect ke `/plot` | **Valid** |
+| **PLT-02** | Plot petugas yang sama pada hari & shift yang sama | `Budi` — `Senin`, `Malam (22:00 - 04:00)` (slot kedua) | Sistem menolak dengan error validasi anti-bentrok pada `petugas_id` | **Tidak Valid** |
 
 ---
 
-### 4. FITUR: PENENTUAN SAPAAN WAKTU (Menu Dashboard)
+### 5. FITUR: PRESENSI KEHADIRAN REAL-TIME (`PATCH /plot/{id}/presensi`)
 
 **RULE:**
-- **Valid (Waktu Pagi):**  
-  Data Input Jam $00 \le Jam < 11$, Sistem menampilkan sapaan *"Selamat pagi"*.
-- **Valid (Waktu Siang):**  
-  Data Input Jam $11 \le Jam < 15$, Sistem menampilkan sapaan *"Selamat siang"*.
-- **Valid (Waktu Sore):**  
-  Data Input Jam $15 \le Jam < 18$, Sistem menampilkan sapaan *"Selamat sore"*.
-- **Valid (Waktu Malam):**  
-  Data Input Jam $18 \le Jam \le 23$, Sistem menampilkan sapaan *"Selamat malam"*.
+- **Valid (Dalam Jam Jadwal Ronda):**  
+  Petugas menekan `Hadir` atau `Izin` tepat pada rentang hari & jam shift jadwal rondanya (misal Selasa 22:00 – Rabu 04:00 WIB); atau Admin/Super Admin mengubah status kapan saja.
+- **Invalid (Di Luar Jam Jadwal / Bukan Pemilik):**  
+  Petugas menekan `Hadir` atau `Izin` sebelum jam shift dimulai / setelah shift berakhir, atau mengubah jadwal milik petugas lain (`403`).
 
 | ID KASUS | SKENARIO | DATA INPUT | HASIL AKTUAL | STATUS |
 | :---: | :--- | :---: | :--- | :---: |
-| **014** | Jam sistem berada pada rentang waktu Pagi | `08:00` | Sistem menampilkan teks: *"Selamat pagi, [Nama Petugas]!"* | **Valid** |
-| **015** | Jam sistem tepat batas atas waktu Pagi | `10:59` | Sistem menampilkan teks: *"Selamat pagi, [Nama Petugas]!"* | **Valid** |
-| **016** | Jam sistem tepat batas awal waktu Siang | `11:00` | Sistem menampilkan teks: *"Selamat siang, [Nama Petugas]!"* | **Valid** |
-| **017** | Jam sistem berada pada rentang waktu Siang | `13:30` | Sistem menampilkan teks: *"Selamat siang, [Nama Petugas]!"* | **Valid** |
-| **018** | Jam sistem tepat batas awal waktu Sore | `15:00` | Sistem menampilkan teks: *"Selamat sore, [Nama Petugas]!"* | **Valid** |
-| **019** | Jam sistem tepat batas akhir waktu Sore | `17:59` | Sistem menampilkan teks: *"Selamat sore, [Nama Petugas]!"* | **Valid** |
-| **020** | Jam sistem tepat batas awal waktu Malam | `18:00` | Sistem menampilkan teks: *"Selamat malam, [Nama Petugas]!"* | **Valid** |
-| **021** | Jam sistem berada pada rentang waktu Malam | `22:00` | Sistem menampilkan teks: *"Selamat malam, [Nama Petugas]!"* | **Valid** |
+| **PRS-01** | Petugas mengisi presensi `Hadir` saat jam shift aktif | Selasa `23:00` WIB / Rabu `02:30` WIB (`Hadir`) | Status pada `plot_ronda` terbarui menjadi `Hadir` | **Valid** |
+| **PRS-02** | Petugas mengajukan `Izin` saat jam shift aktif | Selasa `22:30` WIB (`Izin`) | Status pada `plot_ronda` terbarui menjadi `Izin` | **Valid** |
+| **PRS-03** | Petugas mengisi presensi `Hadir` / `Izin` sebelum jam shift | Selasa `14:00` WIB (`Hadir` / `Izin`) | Sistem menolak dengan pesan error waktu presensi | **Tidak Valid** |
+| **PRS-04** | Petugas mengisi presensi `Hadir` / `Izin` setelah shift berakhir | Rabu `08:00` WIB (`Hadir` / `Izin`) | Sistem menolak dengan pesan error waktu presensi | **Tidak Valid** |
+| **PRS-05** | Petugas mengubah presensi milik petugas lain | `status_kehadiran: "Hadir"` pada plot user lain | Sistem menolak dengan status HTTP `403 Forbidden` | **Tidak Valid** |
 
 ---
 
-### 5. FITUR: FILTER DATA PETUGAS AKTIF (Menu Petugas)
+### 6. FITUR: LAPORAN PATROLI, DETAIL, & VERIFIKASI ADMIN (`/laporan`)
 
 **RULE:**
-- **Valid (Petugas Berstatus Aktif):**  
-  Data Petugas memiliki status `is_active = '1'`, Sistem akan menampilkan data pada tabel daftar petugas aktif.
-- **Invalid / Terfilter (Petugas Nonaktif):**  
-  Data Petugas memiliki status `is_active = '0'`, Sistem menolak menampilkan data tersebut pada tabel petugas aktif.
+- **Input Laporan Valid:** `isi_laporan` terisi ($\ge 1$ karakter); laporan tersimpan dengan `status_verifikasi = 'Pending'`.
+- **Input Laporan Invalid:** `isi_laporan` kosong (`""`), sistem menolak dengan error validasi `isi_laporan`.
+- **Detail Laporan:** ID terdaftar menampilkan HTTP `200`, ID tidak ada menampilkan HTTP `404`.
+- **Verifikasi Admin:** Admin mengubah status laporan menjadi `Diverifikasi` via `PATCH /laporan/{id}/verify`.
 
 | ID KASUS | SKENARIO | DATA INPUT | HASIL AKTUAL | STATUS |
 | :---: | :--- | :---: | :--- | :---: |
-| **022** | Menampilkan data petugas dengan status aktif | Status `is_active = '1'` | Sistem menampilkan data petugas pada tabel dengan badge hijau "Aktif" | **Valid** |
-| **023** | Memfilter petugas dengan status dinonaktifkan | Status `is_active = '0'` | Sistem tidak menampilkan data petugas tersebut di dalam tabel | **Tidak Valid** |
+| **LAP-01** | Kirim laporan patroli dengan deskripsi valid | `kategori: "Aman"`, `isi_laporan: "Situasi aman..."` | Tersimpan dengan `status_verifikasi = 'Pending'` | **Valid** |
+| **LAP-02** | Kirim laporan dalam kondisi isi kosong | `isi_laporan: ""` | Sistem menolak dengan error validasi `isi_laporan` | **Tidak Valid** |
+| **LAP-03** | Admin memverifikasi laporan masuk | `status_verifikasi: "Diverifikasi"` | Status laporan di database berubah menjadi `Diverifikasi` | **Valid** |
+| **DET-01** | Mengakses detail laporan dengan ID terdaftar | `id = 1` (ada di DB) | HTTP `200` dan menampilkan isi laporan | **Valid** |
+| **DET-02** | Mengakses detail laporan dengan ID tidak ditemukan | `id = 99999` | HTTP `404 Not Found` | **Tidak Valid** |
 
 ---
 
-### 6. FITUR: STATUS PERINGATAN LAPORAN HARI INI (Menu Dashboard)
+### 7. FITUR: HAK AKSES (RBAC 4 LEVEL: PUBLIK, PETUGAS, ADMIN, SUPER ADMIN)
 
 **RULE:**
-- **Valid (Sudah Mengirim Laporan):**  
-  Data Input Jumlah Laporan Hari Ini $\ge$ 1, Sistem menampilkan jumlah laporan terkirim dan tidak memunculkan kotak peringatan bahaya (*alert-danger*).
-- **Invalid / Kondisi Peringatan (Belum Laporan):**  
-  Data Input Jumlah Laporan Hari Ini $= 0$, Sistem memunculkan kotak peringatan berwarna merah: *"⚠️ Anda belum mengirim laporan hari ini."*
+- **Publik / Warga (Tanpa Login):** `/`, `/jadwal`, `/anggota`, `/kegiatan` selalu dapat diakses (`200`).
+- **Guest ke Area Internal:** Mengakses `/dashboard`, `/plot`, `/laporan`, `/rekap`, `/petugas`, `/profile` tanpa login dialihkan ke `/login`.
+- **Petugas ke Menu Admin:** Mengakses `/petugas/create`, `/plot/create`, `/plot/schedule`, `/rekap` ditolak `403 Forbidden`.
+- **Admin Biasa ke Menu Super Admin:** Mengubah role (`PATCH /petugas/{id}/role`) atau mengakses `/portal-settings` ditolak `403 Forbidden`.
+- **Super Admin:** Memiliki akses penuh termasuk ubah role (`petugas` ↔ `admin`) dan kustomisasi gambar Portal Warga.
+
+| ID KASUS | SKENARIO | DATA INPUT (ROLE/SESI) | HASIL AKTUAL | STATUS |
+| :---: | :--- | :---: | :--- | :---: |
+| **SEC-01** | Warga mengakses area publik tanpa login | Guest $\rightarrow$ `/`, `/jadwal`, `/anggota`, `/kegiatan` | Semua halaman publik tampil dengan HTTP `200` | **Valid** |
+| **SEC-02** | Guest mengakses menu internal | Guest $\rightarrow$ `/dashboard`, `/plot`, `/laporan`, `/rekap`, `/petugas`, `/profile` | Ditolak dan dialihkan ke `/login` | **Tidak Valid** |
+| **SEC-03** | Petugas biasa mengakses endpoint khusus Admin | Role `petugas` $\rightarrow$ `/petugas/create`, `/plot/schedule`, `/rekap` | Ditolak dengan HTTP `403 Forbidden` | **Tidak Valid** |
+| **SEC-04** | Admin biasa mencoba ubah role atau akses `/portal-settings` | Role `admin` $\rightarrow$ `PATCH /petugas/{id}/role`, `/portal-settings` | Ditolak dengan HTTP `403 Forbidden` | **Tidak Valid** |
+| **SEC-05** | Super Admin mengubah role & gambar portal warga | Role `super_admin` $\rightarrow$ `PATCH /petugas/{id}/role`, `POST /portal-settings` | Role terbarui & gambar portal tersimpan | **Valid** |
+
+---
+
+### 8. FITUR: DASHBOARD (SAPAAN WAKTU WIB), FILTER PETUGAS, & REKAP HARIAN
+
+**RULE:**
+- **Sapaan Waktu (`Asia/Jakarta`):** Pagi ($00 \le Jam < 11$), Siang ($11 \le Jam < 15$), Sore ($15 \le Jam < 18$), Malam ($18 \le Jam \le 23$).
+- **Filter Petugas (`/petugas`):** Untuk role `petugas`, hanya akun `is_active = '1'` yang ditampilkan.
+- **Generate Rekap Harian (`POST /rekap/generate` — Admin):** Menyimpan ringkasan terjadwal, hadir, izin, alfa, dan status keamanan ke `rekap_ronda_harian`.
 
 | ID KASUS | SKENARIO | DATA INPUT | HASIL AKTUAL | STATUS |
 | :---: | :--- | :---: | :--- | :---: |
-| **024** | Petugas telah mengirim minimal 1 laporan hari ini | Total Laporan Hari Ini = 1 | Sistem menampilkan *"Laporan Terkirim: 1 laporan"*, tidak muncul kotak peringatan bahaya | **Valid** |
-| **025** | Petugas mengirim lebih dari 1 laporan hari ini | Total Laporan Hari Ini = 3 | Sistem menampilkan *"Laporan Terkirim: 3 laporan"*, tidak muncul kotak peringatan bahaya | **Valid** |
-| **026** | Petugas belum mengirimkan laporan sama sekali hari ini | Total Laporan Hari Ini = 0 | Sistem memunculkan kotak peringatan berwarna merah: *"⚠️ Anda belum mengirim laporan hari ini."* | **Tidak Valid** |
-
----
-
-### 7. FITUR: REKAPITULASI KEAKTIFAN LAPORAN (Menu Rekap)
-
-**RULE:**
-- **Valid (Petugas Memiliki Kontribusi Laporan):**  
-  Data Input Total Laporan Petugas $\ge$ 1, Sistem menampilkan nama petugas beserta total laporannya pada tabel, diurutkan dari yang terbanyak (*descending*).
-- **Invalid / Terfilter (Petugas Belum Pernah Lapor):**  
-  Data Input Total Laporan Petugas $= 0$, Sistem tidak menampilkan petugas tersebut di dalam tabel rekapitulasi keaktifan.
-
-| ID KASUS | SKENARIO | DATA INPUT | HASIL AKTUAL | STATUS |
-| :---: | :--- | :---: | :--- | :---: |
-| **027** | Petugas dengan jumlah kontribusi laporan terbanyak | Petugas A = 10 Laporan,<br>Petugas B = 4 Laporan | Sistem menampilkan Petugas A pada urutan teratas (ranking 1) dengan total 10 laporan | **Valid** |
-| **028** | Petugas dengan kontribusi minimal 1 laporan | Petugas C = 1 Laporan | Sistem menampilkan Petugas C dengan total 1 laporan | **Valid** |
-| **029** | Petugas terdaftar namun belum pernah mengirim laporan | Petugas D = 0 Laporan | Sistem tidak menampilkan baris Petugas D di tabel rekapitulasi | **Tidak Valid** |
-
----
-
-### 8. FITUR: PROTEKSI AKSES HALAMAN INTERNAL (Middleware Autentikasi)
-
-**RULE:**
-- **Valid (Sesi Pengguna Terautentikasi):**  
-  Pengguna memiliki sesi login aktif (`auth:petugas`), Sistem memberikan izin akses penuh ke menu dalam (`/dashboard`, `/plot`, `/laporan`, `/rekap`, `/petugas`).
-- **Invalid (Pengguna Tamu / Tanpa Sesi Login):**  
-  Pengguna tidak memiliki sesi login (Guest), Sistem menolak akses dan otomatis mengalihkan (*redirect*) ke halaman `/login`.
-
-| ID KASUS | SKENARIO | DATA INPUT (STATUS SESI) | HASIL AKTUAL | STATUS |
-| :---: | :--- | :---: | :--- | :---: |
-| **030** | Mengakses menu Dashboard dengan sesi aktif | Sesi `auth:petugas` aktif | Sistem mengizinkan akses dan menampilkan halaman Dashboard | **Valid** |
-| **031** | Mengakses menu Jadwal (`/plot`) tanpa login | Sesi kosong (Guest) | Sistem menolak akses dan langsung mengalihkan ke halaman `/login` | **Tidak Valid** |
-| **032** | Mengakses menu Laporan (`/laporan`) tanpa login | Sesi kosong (Guest) | Sistem menolak akses dan langsung mengalihkan ke halaman `/login` | **Tidak Valid** |
-| **033** | Mengakses menu Rekap (`/rekap`) tanpa login | Sesi kosong (Guest) | Sistem menolak akses dan langsung mengalihkan ke halaman `/login` | **Tidak Valid** |
-| **034** | Mengakses menu Petugas (`/petugas`) tanpa login | Sesi kosong (Guest) | Sistem menolak akses dan langsung mengalihkan ke halaman `/login` | **Tidak Valid** |
-
----
-
-### 9. FITUR: JADWAL RONDA USER HARI INI (Menu Dashboard)
-
-**RULE:**
-- **Valid (User Memiliki Giliran Ronda Hari Ini):**  
-  Data Input Jadwal User pada Hari Ini $\ge$ 1, Sistem menampilkan keterangan giliran ronda (misal: *"Jadwal Ronda: 1 kali"*).
-- **Valid (User Tidak Ada Giliran Ronda Hari Ini):**  
-  Data Input Jadwal User pada Hari Ini $= 0$, Sistem menampilkan *"Jadwal Ronda: 0 kali"*.
-
-| ID KASUS | SKENARIO | DATA INPUT | HASIL AKTUAL | STATUS |
-| :---: | :--- | :---: | :--- | :---: |
-| **035** | Petugas yang sedang login memiliki jadwal pada hari ini | Jadwal Hari Ini = 1 | Sistem menampilkan keterangan: *"Jadwal Ronda: 1 kali"* pada kartu aktivitas | **Valid** |
-| **036** | Petugas yang sedang login tidak memiliki jadwal pada hari ini | Jadwal Hari Ini = 0 | Sistem menampilkan keterangan: *"Jadwal Ronda: 0 kali"* pada kartu aktivitas | **Valid** |
-
+| **SAP-01..04** | Sapaan waktu dashboard WIB | `08:00`, `13:00`, `16:00`, `21:00` | Menampilkan *Selamat pagi / siang / sore / malam* sesuai jam WIB | **Valid** |
+| **PTG-01** | Petugas biasa melihat daftar petugas | 1 aktif, 1 nonaktif (`is_active = '0'`) | Hanya petugas aktif yang muncul; petugas nonaktif tersembunyi | **Valid** |
+| **RKP-01** | Admin men-generate rekap ronda harian | `tanggal: 2026-11-18`, `status: Aman` | Record tersimpan di tabel `rekap_ronda_harian` | **Valid** |

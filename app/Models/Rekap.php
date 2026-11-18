@@ -2,20 +2,37 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-
 
 class Rekap extends Model
 {
-    protected $table = 'laporan_petugas';
+    use HasFactory;
 
-    public static function laporanPerPetugas()
+    protected $table = 'rekap_ronda_harian';
+    protected $primaryKey = 'id_rekap';
+
+    protected $fillable = [
+        'petugas_id',
+        'tanggal_rekap',
+        'total_petugas_terjadwal',
+        'total_petugas_hadir',
+        'total_petugas_ijin',
+        'total_petugas_alpha',
+        'status_keamanan',
+        'isi_rekap',
+    ];
+
+    protected $casts = [
+        'tanggal_rekap'           => 'date',
+        'total_petugas_terjadwal' => 'integer',
+        'total_petugas_hadir'     => 'integer',
+        'total_petugas_ijin'      => 'integer',
+        'total_petugas_alpha'     => 'integer',
+    ];
+
+    public function petugas()
     {
-        return DB::table('laporan_petugas')
-            ->select('petugas_id', DB::raw('COUNT(*) as total'))
-            ->groupBy('petugas_id')
-            ->get();
+        return $this->belongsTo(Petugas::class, 'petugas_id', 'id_petugas');
     }
-
 }

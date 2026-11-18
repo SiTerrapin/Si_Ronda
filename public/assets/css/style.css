@@ -1,12 +1,384 @@
-body {
-    background-color: #0f172a;
+/* ==========================================================================
+   SiRonda - Modern Card, Segmented Grid, Dark Mode & Mobile Bottom Nav
+   ========================================================================== */
+
+:root {
+    --sr-navy: #1e293b;
+    --sr-navy-dark: #0f172a;
+    --sr-bg: #f1f5f9;
+    --sr-surface: #ffffff;
+    --sr-surface-soft: #f8fafc;
+    --sr-emerald: #10b981;
+    --sr-blue: #2563eb;
+    --sr-amber: #f59e0b;
+    --sr-red: #ef4444;
+    --sr-border: #e2e8f0;
+    --sr-text: #1e293b;
+    --sr-muted: #64748b;
+    --sr-nav-bottom-bg: #ffffff;
+    --sr-input-bg: #ffffff;
 }
 
-nav {
-    background-color: #1e293b;
-    color: #e5e7eb;
+[data-theme="dark"] {
+    --sr-bg: #0f172a;
+    --sr-surface: #1e293b;
+    --sr-surface-soft: #162032;
+    --sr-border: #334155;
+    --sr-text: #f8fafc;
+    --sr-muted: #94a3b8;
+    --sr-nav-bottom-bg: #1e293b;
+    --sr-input-bg: #0f172a;
+}
+
+body {
+    background-color: var(--sr-bg);
+    color: var(--sr-text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+nav.navbar {
+    background: linear-gradient(90deg, var(--sr-navy-dark) 0%, var(--sr-navy) 100%);
+    border-bottom: 2px solid rgba(16, 185, 129, 0.35);
 }
 
 footer {
-    background-color: #1e293b;
+    background-color: var(--sr-navy);
+    color: #e2e8f0;
+}
+
+/* Dark Mode Overrides for Bootstrap Components */
+[data-theme="dark"] .text-muted {
+    color: var(--sr-muted) !important;
+}
+
+[data-theme="dark"] .text-dark {
+    color: var(--sr-text) !important;
+}
+
+[data-theme="dark"] .bg-light,
+[data-theme="dark"] .table-light {
+    background-color: var(--sr-surface-soft) !important;
+    color: var(--sr-text) !important;
+    border-color: var(--sr-border) !important;
+}
+
+[data-theme="dark"] .table {
+    --bs-table-bg: var(--sr-surface);
+    --bs-table-color: var(--sr-text);
+    --bs-table-border-color: var(--sr-border);
+    --bs-table-hover-bg: #263549;
+    --bs-table-hover-color: var(--sr-text);
+    color: var(--sr-text);
+    border-color: var(--sr-border);
+}
+
+[data-theme="dark"] .table > :not(caption) > * > * {
+    background-color: transparent;
+    color: var(--sr-text);
+    border-color: var(--sr-border);
+}
+
+[data-theme="dark"] .list-group-item {
+    background-color: transparent;
+    color: var(--sr-text);
+    border-color: var(--sr-border);
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: var(--sr-input-bg);
+    color: var(--sr-text);
+    border-color: var(--sr-border);
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: #64748b;
+}
+
+[data-theme="dark"] .btn-outline-dark {
+    color: #e2e8f0;
+    border-color: #475569;
+}
+
+[data-theme="dark"] .btn-outline-dark:hover {
+    background-color: #334155;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .border-bottom,
+[data-theme="dark"] .border-top,
+[data-theme="dark"] .border {
+    border-color: var(--sr-border) !important;
+}
+
+/* Segmented Panel / Filter Box */
+.filter-panel {
+    background-color: var(--sr-surface-soft);
+    border: 1px solid var(--sr-border);
+    border-radius: 14px;
+    padding: 1.15rem 1.25rem;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.modern-card {
+    background-color: var(--sr-surface);
+    border: 1px solid var(--sr-border);
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+}
+
+/* Hero Banner (Beranda) */
+.hero-banner {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
+}
+
+.hero-overlay {
+    background: linear-gradient(115deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.80) 55%, rgba(16, 185, 129, 0.45) 100%);
+    padding: 3rem 2rem;
+}
+
+/* Dashboard Summary Cards with Left Accent */
+.stat-card {
+    background-color: var(--sr-surface);
+    border: 1px solid var(--sr-border);
+    border-left-width: 5px;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
+}
+
+.stat-card.accent-info { border-left-color: #0ea5e9; }
+.stat-card.accent-blue { border-left-color: var(--sr-blue); }
+.stat-card.accent-emerald { border-left-color: var(--sr-emerald); }
+.stat-card.accent-amber { border-left-color: var(--sr-amber); }
+
+.stat-value {
+    font-size: 1.95rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--sr-text);
+}
+
+.stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+/* Responsive CSS Grid for Weekly Schedule (3 col desktop, 2 col tablet, 1 col mobile) */
+.schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+@media (max-width: 991.98px) {
+    .schedule-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 639.98px) {
+    .schedule-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Day Card */
+.day-card {
+    background-color: var(--sr-surface);
+    border: 1px solid var(--sr-border);
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s ease;
+}
+
+.day-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.10);
+}
+
+.day-card.is-today {
+    border: 2px solid var(--sr-emerald);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.18);
+}
+
+.day-card-header {
+    padding: 0.85rem 1.1rem;
+    background: linear-gradient(135deg, var(--sr-navy) 0%, #334155 100%);
+    color: #ffffff;
+}
+
+.day-card.is-today .day-card-header {
+    background: linear-gradient(135deg, #059669 0%, var(--sr-emerald) 100%);
+}
+
+.day-slot-item {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--sr-border);
+}
+
+.day-slot-item:last-child {
+    border-bottom: none;
+}
+
+/* Blinking / Pulsing Badge for Tonight */
+@keyframes sr-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.65; transform: scale(0.97); }
+}
+
+.badge-pulse {
+    animation: sr-pulse 1.8s infinite ease-in-out;
+}
+
+/* Member Cards (Anggota) */
+.member-card {
+    background-color: var(--sr-surface);
+    border: 1px solid var(--sr-border);
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    padding: 1.25rem;
+    transition: all 0.2s ease;
+    height: 100%;
+}
+
+.member-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+.avatar-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--sr-blue) 0%, var(--sr-emerald) 100%);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.avatar-circle-lg {
+    width: 72px;
+    height: 72px;
+    font-size: 1.55rem;
+}
+
+/* Feed / News Card (Kegiatan) */
+.feed-card {
+    background-color: var(--sr-surface);
+    border: 1px solid var(--sr-border);
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    transition: all 0.2s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.feed-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+.feed-thumb {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Mobile-First Fixed Bottom Navigation Bar */
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    background-color: var(--sr-nav-bottom-bg);
+    border-top: 1px solid var(--sr-border);
+    box-shadow: 0 -4px 18px rgba(15, 23, 42, 0.12);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0.45rem 0.25rem;
+}
+
+.mobile-bottom-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--sr-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.25rem 0.4rem;
+    border-radius: 10px;
+    min-width: 58px;
+    transition: color 0.15s ease;
+}
+
+.mobile-bottom-item.active {
+    color: var(--sr-emerald);
+}
+
+.mobile-bottom-item svg {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 2px;
+}
+
+@media (max-width: 991.98px) {
+    body {
+        padding-bottom: 85px;
+    }
+}
+
+/* Print Optimization */
+@media print {
+    nav, footer, .no-print, .mobile-bottom-nav {
+        display: none !important;
+    }
+    body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        padding-bottom: 0 !important;
+    }
+    .schedule-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem !important;
+    }
+    .day-card, .modern-card, .stat-card {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        break-inside: avoid;
+    }
+    .day-card-header {
+        background: #e2e8f0 !important;
+        color: #000000 !important;
+    }
 }

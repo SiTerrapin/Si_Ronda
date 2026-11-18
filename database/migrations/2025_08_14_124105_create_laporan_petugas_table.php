@@ -12,20 +12,25 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('laporan_petugas', function (Blueprint $table) {
-            $table->bigIncrements('id_lapor'); // bigIncrements untuk BIGINT AUTO_INCREMENT PRIMARY KEY
-            $table->unsignedInteger('petugas_id'); // unsignedInteger untuk Foreign Key
-            $table->dateTime('tanggal_lapor');
-            $table->longText('isi_laporan'); // longText untuk LONGTEXT
-            // Untuk created_at dengan DEFAULT CURRENT_TIMESTAMP
-            $table->timestamp('created_at')->useCurrent();
-            // Jika Anda juga butuh updated_at, gunakan $table->timestamps()
-            // $table->timestamps();
+            $table->bigIncrements('id_lapor');
+            $table->unsignedInteger('petugas_id');
+            $table->unsignedInteger('plot_id')->nullable();
+            $table->dateTime('tanggal_lapor')->index();
+            $table->enum('kategori_situasi', ['Aman', 'Mencurigakan', 'Darurat/Bencana', 'Kriminalitas'])->default('Aman')->index();
+            $table->longText('isi_laporan');
+            $table->string('foto_bukti')->nullable();
+            $table->enum('status_verifikasi', ['Pending', 'Diverifikasi'])->default('Pending')->index();
+            $table->timestamps();
 
-            // Definisi Foreign Key
             $table->foreign('petugas_id')
                   ->references('id_petugas')
                   ->on('petugas')
                   ->onDelete('cascade');
+
+            $table->foreign('plot_id')
+                  ->references('id_plot')
+                  ->on('plot_ronda')
+                  ->nullOnDelete();
         });
     }
 
